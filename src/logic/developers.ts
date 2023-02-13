@@ -256,32 +256,54 @@ export const patchDeveloperInfo = async (
   }
 };
 
-// export const getDeveloperProjects = async (
-//   request: Request,
-//   response: Response
-// ): Promise<Response> => {
-//   try {
+export const getDeveloperProjects = async (
+  request: Request,
+  response: Response
+): Promise<Response> => {
+  try {
+    const id: number = parseInt(request.params.id);
+    const queryString = `SELECT
+    d."id" as "developerID",
+    d."name" as "developerName",
+    d."email" as "developerEmail",
+    d."developerinfoid" as "developerInfoID",
+    di."developersince" as "developerInfoDeveloperSince",
+    di."preferredos" as "developerInfoPreferredOS",
+    pr."id" as "projectID",
+    pr."name" as "projectName",
+    pr."description" as "projectDescription",
+    pr."estimatedTime" as "projectEstimatedTime",
+    pr."repository" as "projectRepository",
+    pr."startDate" as "projectStartDate",
+    pr."endDate" as "projectEndDate",
+    t."id" as "technologyId",
+    t."name" as "technologyName"
+   FROM
+   projects pr
+   FULL JOIN
+   developers d ON pr."developerId" = d.id
+   LEFT JOIN 
+   developer_infos di ON d.developerinfoid = di.id
+   LEFT JOIN 
+   technologies t ON pr.id = t.id 
+   WHERE
+   pr."developerId" = $1
+   ; `;
+    const queryConfig: QueryConfig = {
+      text: queryString,
+      values: [id],
+    };
+    const queryResult = await client.query(queryConfig);
 
-//     const queryString = `SELECT
-// de.*,
-// dein."developersince",
-// dein."preferredos"
-// FROM
-//  developers de
-// FULL JOIN
-//  developer_infos dein ON de."developerinfoid" = dein.id
-// WHERE
-// de.id = $1; `;
-
-//     return response.status(201);
-//   } catch (error) {
-//     if (error instanceof Error) {
-//       return response.status(400).json({
-//         message: error.message,
-//       });
-//     }
-//     return response.status(500).json({
-//       message: "internal server error",
-//     });
-//   }
-// };
+    return response.status(201).json(queryResult.rows);
+  } catch (error) {
+    if (error instanceof Error) {
+      return response.status(400).json({
+        message: error.message,
+      });
+    }
+    return response.status(500).json({
+      message: "internal server error",
+    });
+  }
+};

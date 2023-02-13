@@ -4,6 +4,7 @@ import {
   deleteDeveloper,
   getADeveloper,
   getAllDevelopers,
+  getDeveloperProjects,
   patchDeveloper,
   patchDeveloperInfo,
   postDeveloper,
@@ -24,7 +25,7 @@ app.use(json());
 app.post("/developers", middlewareGetDataBase, postDeveloper);
 app.get("/developers", middlewareGetDataBase, getAllDevelopers);
 app.get("/developers/:id", middlewareGetDataBase, getADeveloper);
-app.get("/developers/:id/projects");
+app.get("/developers/:id/projects", getDeveloperProjects);
 app.post("/developers/:id/infos", middlewareGetDataBase, postDeveloperInfo);
 app.delete("/developers/:id", middlewareGetDataBase, deleteDeveloper);
 app.patch("/developers/:id", patchDeveloper);
@@ -35,8 +36,6 @@ app.get("/projects", middlewareGetProjects, getAllProjects);
 app.get("/projects/:id", middlewareGetProjects, getAProject);
 app.patch("/projects/:id", patchProject);
 app.delete("/projects/:id", deleteProject);
-app.post("/projects/:id/technologies");
-app.delete("/projects/:id/technologies/:name");
 
 const PORT: number = 3000;
 const runningMsg: string = `Server running on http://localhost:${PORT}`;

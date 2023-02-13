@@ -2,29 +2,6 @@ import { Request, Response } from "express";
 import { QueryConfig } from "pg";
 import format from "pg-format";
 import { client } from "../database";
-import { IProjectResponse, TProjectsKeys } from "../interfaces";
-
-// export const validateData = (payload: any, database: any) => {
-//   const keys: Array<String> = Object.keys(payload);
-//   const requiredKeys: Array<TProjectsKeys> = [
-//     "name",
-//     "description",
-//     "repository",
-//     "estimatedTime",
-//     "startDate",
-//   ];
-
-//   const containRequired: boolean = requiredKeys.every((key: string) => {
-//     return keys.includes(key);
-//   });
-
-//   if (!containRequired) {
-//     throw new Error(
-//       `Required keys: ${requiredKeys[0]}, ${requiredKeys[1]}, ${requiredKeys[2]}, ${requiredKeys[3]}, ${requiredKeys[4]}. `
-//     );
-//   }
-//   return payload;
-// };
 
 export const postProject = async (
   request: Request,
@@ -65,16 +42,16 @@ export const getAllProjects = async (
   try {
     const queryString = `
     SELECT
-  pr."id" as "developerID",
-  pr."name" as "developerName",
+  pr."id" as "projectID",
+  pr."name" as "projectName",
   pr."description",
   pr."estimatedTime",
   pr."repository",
   pr."startDate",
   pr."endDate",
   pr."developerId",
-  tec."id",
-  tec."name"
+  tec."id" as "tecID",
+  tec."name" as "tecName"
 FROM
 technologies_projects tp
 FULL JOIN
@@ -101,13 +78,37 @@ export const getAProject = async (
   response: Response
 ): Promise<Response> => {
   try {
-    const dataProjects = request.Projects.queryResult;
-    const id = request.params.id;
-    const findId = dataProjects.rows.find((e: IProjectResponse) => e.id === id);
-    if (findId === undefined) {
-      return response.status(404).json({ message: "Project not found." });
-    }
-    return response.status(200).json(findId);
+    const id: number = parseInt(request.params.id);
+
+    const queryString = `
+    SELECT
+    pr."id" as "projectID",
+    pr."name" as "projectName",
+    pr."description",
+    pr."estimatedTime",
+    pr."repository",
+    pr."startDate",
+    pr."endDate",
+    pr."developerId",
+    tec."id" as "tecID",
+    tec."name" as "tecName"
+  FROM
+  technologies_projects tp
+  FULL JOIN
+  projects pr ON tp."projectId" = pr.id
+  LEFT JOIN
+  technologies tec ON tp."technologyId" = tec.id
+  WHERE
+  pr.id = $1
+  ;  `;
+
+    const queryConfig: QueryConfig = {
+      text: queryString,
+      values: [id],
+    };
+    const queryResult = await client.query(queryConfig);
+
+    return response.status(200).json(queryResult.rows);
   } catch (error) {
     if (error instanceof Error) {
       return response.status(400).json({
@@ -196,22 +197,3 @@ export const deleteProject = async (
     });
   }
 };
-
-// export const postTecnoProject = async (
-//   request: Request,
-//   response: Response
-// ): Promise<Response> => {
-//   try {
-// const queryString =
-
-//   } catch (error) {
-//     if (error instanceof Error) {
-//       return response.status(400).json({
-//         message: error.message,
-//       });
-//     }
-//     return response.status(500).json({
-//       message: "internal server error",
-//     });
-//   }
-// };
