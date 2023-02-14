@@ -2,13 +2,48 @@ import { Request, Response } from "express";
 import { QueryConfig } from "pg";
 import format from "pg-format";
 import { client } from "../database";
+import { TPrimaryKeys, TProjectsKeys } from "../interfaces";
+
+const validadeConstData = (payload: any): TProjectsKeys => {
+  const keys: Array<String> = Object.keys(payload);
+  const requiredKeys: Array<TProjectsKeys> = [
+    "name",
+    "description",
+    "estimatedTime",
+    "repository",
+    "startDate",
+    "developerId",
+  ];
+  const primaryKeys: Array<TPrimaryKeys> = [
+    "name",
+    "description",
+    "estimatedTime",
+    "repository",
+    "startDate",
+    "endDate",
+    "developerId",
+  ];
+  const containRequired: Boolean = requiredKeys.every((key: String) => {
+    return keys.includes(key);
+  });
+  if (!containRequired) {
+    throw new Error(`Required keys are ${requiredKeys}.`);
+  }
+  keys.forEach((e: any) => {
+    if (!primaryKeys.includes(e)) {
+      delete payload[e];
+    }
+  });
+
+  return payload;
+};
 
 export const postProject = async (
   request: Request,
   response: Response
 ): Promise<Response> => {
   try {
-    const data = request.body;
+    const data = validadeConstData(request.body);
     const queryString: string = format(
       `
     INSERT INTO 
@@ -24,12 +59,23 @@ export const postProject = async (
     const queryResult = await client.query(queryString);
 
     return response.status(201).json(queryResult.rows[0]);
-  } catch (error) {
+  } catch (error: any) {
+    if (
+      error.message.includes(
+        'insert or update on table "projects" violates foreign'
+      )
+    ) {
+      return response.status(404).json({
+        message: "Developer not found",
+      });
+    }
+
     if (error instanceof Error) {
       return response.status(400).json({
         message: error.message,
       });
     }
+
     return response.status(500).json({
       message: "internal server error",
     });
@@ -107,8 +153,11 @@ export const getAProject = async (
       values: [id],
     };
     const queryResult = await client.query(queryConfig);
+    if (!queryResult.rowCount) {
+      return response.status(404).json({ message: "Project not found." });
+    }
 
-    return response.status(200).json(queryResult.rows);
+    return response.status(200).json(queryResult.rows[0]);
   } catch (error) {
     if (error instanceof Error) {
       return response.status(400).json({
@@ -121,14 +170,35 @@ export const getAProject = async (
   }
 };
 
+const validatePatchProject = (payload: any) => {
+  const keys: Array<String> = Object.keys(payload);
+  const primaryKeys: Array<TPrimaryKeys> = [
+    "name",
+    "description",
+    "estimatedTime",
+    "repository",
+    "startDate",
+    "endDate",
+    "developerId",
+  ];
+
+  keys.forEach((e: any) => {
+    if (!primaryKeys.includes(e)) {
+      delete payload[e];
+    }
+  });
+
+  return payload;
+};
 export const patchProject = async (
   request: Request,
   response: Response
 ): Promise<Response> => {
   try {
+    const validatedData = validatePatchProject(request.body);
     const keysData = Object.keys(request.body);
     const id: number = parseInt(request.params.id);
-    const newData = Object.values(request.body);
+    const newData = Object.values(validatedData);
     const formatString: string = format(
       `
     UPDATE 
@@ -151,7 +221,13 @@ export const patchProject = async (
       return response.status(404).json({ message: "Developer not found." });
     }
     return response.status(201).json(queryResult.rows[0]);
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message.includes("syntax error at or near")) {
+      return response.status(404).json({
+        message:
+          "RequiredKeys are: name, description, estimatedTime, repository, startDate, endDate, developerId",
+      });
+    }
     if (error instanceof Error) {
       return response.status(400).json({
         message: error.message,

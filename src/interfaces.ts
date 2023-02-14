@@ -35,4 +35,13 @@ export type TProjectsKeys =
   | "description"
   | "estimatedTime"
   | "repository"
-  | "startDate";
+  | "startDate"
+  | "developerId";
+export type TPrimaryKeys =
+  | "name"
+  | "description"
+  | "estimatedTime"
+  | "repository"
+  | "startDate"
+  | "endDate"
+  | "developerId";
