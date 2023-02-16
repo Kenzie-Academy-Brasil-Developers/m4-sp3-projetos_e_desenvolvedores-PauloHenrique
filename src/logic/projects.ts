@@ -261,7 +261,7 @@ export const deleteProject = async (
       return response.status(404).json({ message: "Project not found." });
     }
 
-    return response.status(201).json();
+    return response.status(200).json();
   } catch (error) {
     if (error instanceof Error) {
       return response.status(400).json({

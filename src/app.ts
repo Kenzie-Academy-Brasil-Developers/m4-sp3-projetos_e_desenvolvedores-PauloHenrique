@@ -28,7 +28,7 @@ app.get("/developers/:id", middlewareGetDataBase, getADeveloper);
 app.get("/developers/:id/projects", getDeveloperProjects);
 app.post("/developers/:id/infos", middlewareGetDataBase, postDeveloperInfo);
 app.delete("/developers/:id", middlewareGetDataBase, deleteDeveloper);
-app.patch("/developers/:id", patchDeveloper);
+app.patch("/developers/:id", middlewareGetDataBase, patchDeveloper);
 app.patch("/developers/:id/infos", patchDeveloperInfo);
 
 app.post("/projects", middlewareGetDataBase, postProject);

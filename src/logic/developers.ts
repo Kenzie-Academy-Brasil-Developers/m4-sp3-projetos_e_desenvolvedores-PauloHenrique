@@ -217,9 +217,26 @@ export const deleteDeveloper = async (
 
   return response.status(201).json();
 };
-const validadePatchDeveloper = (payload: any): IDeveloperRequest => {
+const validadePatchDeveloper = (
+  payload: any,
+  database: any
+): IDeveloperRequest => {
   const keys: Array<String> = Object.keys(payload);
   const requiredKeys: any = ["name", "email"];
+
+  const dataBaseIncluds: boolean = database.rows.every(
+    (e: IDeveloperResponse) => {
+      if (e.email === payload.email) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+  );
+
+  if (!dataBaseIncluds) {
+    throw new Error(`email already exists`);
+  }
 
   keys.forEach((e: any) => {
     if (!requiredKeys.includes(e)) {
@@ -235,7 +252,8 @@ export const patchDeveloper = async (
   response: Response
 ): Promise<Response> => {
   try {
-    const validatedData = validadePatchDeveloper(request.body);
+    const dataBase = request.DataBase.queryResult;
+    const validatedData = validadePatchDeveloper(request.body, dataBase);
     const id: number = parseInt(request.params.id);
     const newData = Object.values(validatedData);
     const keysData = Object.keys(request.body);
@@ -277,15 +295,6 @@ export const patchDeveloper = async (
 const validatePatchDeveloperInfo = (payload: any): IDeveloperRequest => {
   const keys: Array<String> = Object.keys(payload);
   const requiredKeys: any = ["preferredos"];
-  const preferredOSKeys: Array<TPreferOSKeys> = ["Linux", "Windows", "MacOS"];
-  const keysOS = payload.preferredOS;
-  const containOSRequired: boolean = preferredOSKeys.includes(keysOS);
-
-  if (!containOSRequired) {
-    throw new Error(
-      `Required OS: ${preferredOSKeys[0]}, ${preferredOSKeys[1]}, ${preferredOSKeys[2]}.`
-    );
-  }
 
   keys.forEach((e: any) => {
     if (!requiredKeys.includes(e)) {
@@ -328,7 +337,12 @@ export const patchDeveloperInfo = async (
       return response.status(404).json({ message: "Developer not found." });
     }
     return response.status(201).json(queryResult.rows[0]);
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message.includes("invalid input value for enum os")) {
+      return response.status(400).json({
+        message: "Required OS: Linux, Windows, MacOS.",
+      });
+    }
     if (error instanceof Error) {
       return response.status(400).json({
         message: error.message,
